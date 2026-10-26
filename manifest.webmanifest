@@ -1,9 +1,10 @@
 {
+  "id": "/my-note-app/",
+  "scope": "/my-note-app/",
+  "start_url": "/my-note-app/index.html",
   "name": "ノート",
   "short_name": "ノート",
   "lang": "ja",
-  "start_url": "./",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#E5E5E5",
   "theme_color": "#E5E5E5",
