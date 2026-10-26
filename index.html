@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ノート</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#E5E5E5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ノート">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E5E5E5;--ac:#A499C9;--ink:#2b2b2b;--sub:#777;--card:#F3F2F9;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-weight:300;font-size:16px;line-height:1.5}
+#app{max-width:560px;margin:0 auto;padding:16px 20px 48px}
+button,input,textarea{font:inherit;color:inherit;font-weight:300}
+button{background:transparent;border:1px solid var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer}
+button:active{background:rgba(0,0,0,.06)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tabs button{border-radius:6px;letter-spacing:.15em;font-size:14px;padding:10px 0;box-shadow:0 2px 0 -1px rgba(0,0,0,.2)}
+.tabs button.on{background:var(--ac)}
+.tabs button:disabled{opacity:.4;cursor:default}
+.head{text-align:center;margin:26px 0 18px;position:relative}
+.head h1{margin:0;font-size:20px;font-weight:300;letter-spacing:.08em;overflow-wrap:anywhere}
+.head p{margin:2px 0 0;font-size:13px;color:var(--sub)}
+.label{font-size:15px;color:var(--sub);margin:22px 0 10px}
+.row{display:flex;gap:10px;margin-top:12px}
+.row input{flex:1;min-width:0}
+input,textarea{width:100%;background:transparent;border:1px solid var(--ink);border-radius:12px;padding:12px 14px;outline:none}
+input::placeholder,textarea::placeholder{color:#9a9a9a}
+input:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}
+textarea{min-height:170px;resize:vertical}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--ink);border-radius:18px;padding:6px 8px 6px 20px;margin-bottom:10px;cursor:pointer;min-height:64px}
+.item .t{flex:1;min-width:0}
+.item .t b{display:block;font-weight:300;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t small{display:block;color:var(--sub);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .n{color:var(--sub);font-size:14px}
+.item .m{border-radius:999px;width:40px;height:40px;padding:0;line-height:1;font-size:18px}
+.empty{text-align:center;color:var(--sub);font-size:14px;margin:36px 0}
+.back{display:inline-block;border-radius:999px;padding:6px 18px;margin-top:6px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.28);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{width:100%;max-width:560px;background:var(--bg);border:1px solid var(--ink);border-bottom:0;border-radius:22px 22px 0 0;padding:18px 20px calc(20px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin:0 0 12px;font-size:15px;font-weight:300;color:var(--sub);text-align:center;overflow-wrap:anywhere}
+.sheet button{display:block;width:100%;margin-top:10px;text-align:center}
+.sheet .ac{background:var(--ac)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+var KEY='interview-notes-v1',S=null;
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(x){S=null}
+if(!S||!S.folders){S={folders:[
+{id:uid(),name:'志望理由',cards:[
+{id:uid(),q:'なぜこの学科を志望したのですか？',a:'',m:''},
+{id:uid(),q:'入学後に取り組みたいことは何ですか？',a:'',m:''}]},
+{id:uid(),name:'自己PR',cards:[]}]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(x){}}
+var v={n:'home'},sh=null;
+function F(id){return S.folders.filter(function(f){return f.id===id})[0]}
+function C(f,id){return f.cards.filter(function(c){return c.id===id})[0]}
+function cardTitle(c){return c.q.trim()||(c.a.trim()||c.m.trim()).split('\n')[0]||'無題のカード'}
+function cardSub(c){var s=(c.a.trim()||c.m.trim());return s?s.replace(/\s+/g,' ').slice(0,40):''}
+function render(){
+  var h='',f=v.f?F(v.f):null,c=f&&v.c?C(f,v.c):null;
+  if(v.n!=='home')h+='<button class="back" data-a="back">&lt;</button>';
+  if(v.n==='home'){
+    h+='<div class="head"><h1>ノート</h1><p>フォルダ</p></div>';
+    if(!S.folders.length)h+='<div class="empty">フォルダがありません。下で追加できます。</div>';
+    S.folders.forEach(function(x){
+      h+='<div class="item" data-a="folder" data-f="'+x.id+'"><div class="t"><b>'+e(x.name)+'</b></div><span class="n">'+x.cards.length+'</span><button class="m" data-a="sf" data-f="'+x.id+'">⋯</button></div>'});
+    h+='<div class="row"><input id="nf" placeholder="フォルダ名"><button data-a="addf">+ フォルダを追加</button></div>';
+  }
+  if(v.n==='folder'&&f){
+    h+='<div class="head"><h1>'+e(f.name)+'</h1><p>カード '+f.cards.length+' 枚</p></div>';
+    if(!f.cards.length)h+='<div class="empty">カードがありません。下の「+ カードを追加」で作れます。</div>';
+    f.cards.forEach(function(x){
+      h+='<div class="item" data-a="card" data-f="'+f.id+'" data-c="'+x.id+'"><div class="t"><b>'+e(cardTitle(x))+'</b>'+(cardSub(x)?'<small>'+e(cardSub(x))+'</small>':'')+'</div><button class="m" data-a="sc" data-f="'+f.id+'" data-c="'+x.id+'">⋯</button></div>'});
+    h+='<div class="row"><button data-a="addc" style="width:100%">+ カードを追加</button></div>';
+  }
+  if(v.n==='card'&&f&&c){
+    h+='<div class="head"><h1>'+e(cardTitle(c))+'</h1><p>'+e(f.name)+'</p></div>';
+    h+='<div class="label">質問文</div><input id="q" value="'+e(c.q)+'">';
+    h+='<div class="label">回答</div><textarea id="a">'+e(c.a)+'</textarea>';
+    h+='<div class="label">メモ</div><textarea id="m">'+e(c.m)+'</textarea>';
+  }
+  if(sh){
+    var sf=F(sh.f),sc=sf&&sh.c?C(sf,sh.c):null,b='';
+    if(sh.t==='sf'&&sf)b='<h2>'+e(sf.name)+'</h2><button data-a="ren">名前を変更</button><button data-a="delf">削除</button><button data-a="x">閉じる</button>';
+    if(sh.t==='ren'&&sf)b='<h2>フォルダ名を変更</h2><input id="rn" value="'+e(sf.name)+'"><button class="ac" data-a="renok">保存</button><button data-a="x">やめる</button>';
+    if(sh.t==='delf'&&sf)b='<h2>「'+e(sf.name)+'」とカード '+sf.cards.length+' 枚を削除します</h2><button class="ac" data-a="delfok">削除する</button><button data-a="x">やめる</button>';
+    if(sh.t==='sc'&&sc)b='<h2>'+e(cardTitle(sc))+'</h2><button data-a="up">上へ</button><button data-a="dn">下へ</button><button data-a="mv">別のフォルダへ移動</button><button data-a="delc">削除</button><button data-a="x">閉じる</button>';
+    if(sh.t==='mv'&&sc){var o=S.folders.filter(function(y){return y.id!==sf.id});
+      b='<h2>移動先のフォルダ</h2>'+(o.length?o.map(function(y){return'<button data-a="mvok" data-to="'+y.id+'">'+e(y.name)+'</button>'}).join(''):'<div class="empty" style="margin:12px 0">移動先のフォルダがありません</div>')+'<button data-a="x">やめる</button>'}
+    if(sh.t==='delc'&&sc)b='<h2>このカードを削除します</h2><button class="ac" data-a="delcok">削除する</button><button data-a="x">やめる</button>';
+    if(b)h+='<div class="scrim" data-a="x0"><div class="sheet">'+b+'</div></div>';
+  }
+  document.getElementById('app').innerHTML=h;
+}
+var H=true;
+function snap(){return JSON.parse(JSON.stringify({v:v,sh:sh}))}
+function push(){if(!H)return;try{history.pushState(snap(),'')}catch(x){H=false}}
+function rep(){if(!H)return;try{history.replaceState(snap(),'')}catch(x){H=false}}
+function closeSheet(){sh=null;if(H)history.back()}
+function goBack(){if(H){history.back();return}if(sh)sh=null;else if(v.n==='card')v={n:'folder',f:v.f};else v={n:'home'};render()}
+try{history.replaceState(snap(),'')}catch(x){H=false}
+window.addEventListener('popstate',function(ev){var s=ev.state;if(s&&s.v){v=s.v;sh=s.sh}else{v={n:'home'};sh=null}
+ if(v.f&&!F(v.f)){v={n:'home'};sh=null}else if(v.c&&!C(F(v.f),v.c)){v={n:'folder',f:v.f};sh=null}
+ render()});
+document.addEventListener('click',function(ev){
+  var t=ev.target.closest('[data-a]');if(!t)return;
+  var a=t.dataset.a,f=t.dataset.f?F(t.dataset.f):(sh&&sh.f?F(sh.f):null);
+  if(a==='x0'&&ev.target!==t)return;
+  if(a==='m'||a==='sf'||a==='sc')ev.stopPropagation();
+  if(a==='back'){goBack();return}
+  else if(a==='folder'&&f){v={n:'folder',f:f.id};sh=null;push()}
+  else if(a==='card'){v={n:'card',f:t.dataset.f,c:t.dataset.c};push()}
+  else if(a==='addf'){var i=document.getElementById('nf'),n=i.value.trim();if(!n){i.focus();return}S.folders.push({id:uid(),name:n,cards:[]});save()}
+  else if(a==='addc'){var nc={id:uid(),q:'',a:'',m:''};F(v.f).cards.unshift(nc);save();v={n:'card',f:v.f,c:nc.id};push()}
+  else if(a==='sf'||a==='sc'){sh={t:a,f:t.dataset.f,c:t.dataset.c};push()}
+  else if(a==='ren'){sh.t='ren';rep()}
+  else if(a==='renok'){var r=document.getElementById('rn').value.trim();if(r){f.name=r;save()}closeSheet()}
+  else if(a==='delf'){sh.t='delf';rep()}
+  else if(a==='delfok'){S.folders=S.folders.filter(function(y){return y.id!==f.id});save();closeSheet()}
+  else if(a==='up'||a==='dn'){var k=f.cards.findIndex(function(y){return y.id===sh.c}),j=a==='up'?k-1:k+1;
+    if(j>=0&&j<f.cards.length){var tmp=f.cards[k];f.cards[k]=f.cards[j];f.cards[j]=tmp;save()}closeSheet()}
+  else if(a==='mv'){sh.t='mv';rep()}
+  else if(a==='mvok'){var k2=f.cards.findIndex(function(y){return y.id===sh.c}),cd=f.cards.splice(k2,1)[0];F(t.dataset.to).cards.unshift(cd);save();closeSheet()}
+  else if(a==='delc'){sh.t='delc';rep()}
+  else if(a==='delcok'){f.cards=f.cards.filter(function(y){return y.id!==sh.c});save();closeSheet()}
+  else if(a==='x'||a==='x0'){closeSheet()}
+  render();
+});
+document.addEventListener('input',function(ev){
+  var id=ev.target.id;if(v.n!=='card'||!/^[qam]$/.test(id))return;
+  var c=C(F(v.f),v.c);c[id]=ev.target.value;save();
+});
+render();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>
