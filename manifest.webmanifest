@@ -1,7 +1,7 @@
 {
-  "id": "/my-note-app/",
-  "scope": "/my-note-app/",
-  "start_url": "/my-note-app/index.html",
+  "id": "/my-note/",
+  "scope": "/my-note/",
+  "start_url": "/my-note/index.html",
   "name": "ノート",
   "short_name": "ノート",
   "lang": "ja",
